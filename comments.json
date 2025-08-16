@@ -1,0 +1,14 @@
+{
+  "medsagehq": {
+    "edits": {
+      "mainContent": "<p>Updated admin text</p>"
+    },
+    "comments": [
+      { "id": 1, "name": "John", "message": "Nice work!", "timestamp": "2025-08-15T12:00:00Z" }
+    ]
+  },
+  "drivevirtual": {
+    "edits": {},
+    "comments": []
+  }
+}

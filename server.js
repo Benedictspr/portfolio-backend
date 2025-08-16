@@ -2,13 +2,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
 const path = require('path');
-const cors = require('cors'); // ✅ Added CORS
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// ✅ Allow requests only from your GitHub Pages domain
-app.use(cors({ origin: 'https://benedictspr.github.io' }));
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
