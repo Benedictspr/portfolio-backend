@@ -2,9 +2,9 @@
   "name": "my-portfolio-backend",
   "version": "1.0.0",
   "description": "Backend for my portfolio website",
-  "main": "comment.js",
+  "main": "backend/comment.js",
   "scripts": {
-    "start": "node comment.js",
+    "start": "node backend/comment.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
