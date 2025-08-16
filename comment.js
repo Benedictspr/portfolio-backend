@@ -1,14 +1,14 @@
 const fs = require("fs");
 const path = require("path");
 const express = require("express");
-const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
 
 const commentsFilePath = path.join(__dirname, "data/comments.json");
 
 // Ensure `data` folder exists
-if (!fs.existsSync(path.join(__dirname, "data"))) {
-  fs.mkdirSync(path.join(__dirname, "data"));
+const dataFolder = path.join(__dirname, "data");
+if (!fs.existsSync(dataFolder)) {
+  fs.mkdirSync(dataFolder, { recursive: true });
 }
 
 // Load existing comments from file
@@ -16,7 +16,12 @@ function loadComments() {
   if (!fs.existsSync(commentsFilePath)) {
     fs.writeFileSync(commentsFilePath, JSON.stringify({}), "utf8");
   }
-  return JSON.parse(fs.readFileSync(commentsFilePath, "utf8"));
+  try {
+    return JSON.parse(fs.readFileSync(commentsFilePath, "utf8"));
+  } catch (err) {
+    console.error("Error reading comments.json:", err);
+    return {};
+  }
 }
 
 // Save comments to file
@@ -34,6 +39,8 @@ const transporter = nodemailer.createTransport({
 });
 
 function registerRoutes(app) {
+  app.use(express.json());
+
   // ==========================
   // Get comments for a page
   // ==========================
@@ -71,13 +78,15 @@ function registerRoutes(app) {
     saveComments(data);
 
     try {
-      await transporter.sendMail({
-        from: `"Portfolio Comments" <${process.env.EMAIL_USER}>`,
-        to: process.env.NOTIFY_EMAIL,
-        subject: `New comment on page: ${pageId}`,
-        text: `Author: ${newComment.name}\n\nComment:\n${newComment.message}\n\nPosted at: ${newComment.timestamp}`,
-      });
-      console.log("Email sent for new comment");
+      if (process.env.EMAIL_USER && process.env.NOTIFY_EMAIL) {
+        await transporter.sendMail({
+          from: `"Portfolio Comments" <${process.env.EMAIL_USER}>`,
+          to: process.env.NOTIFY_EMAIL,
+          subject: `New comment on page: ${pageId}`,
+          text: `Author: ${newComment.name}\n\nComment:\n${newComment.message}\n\nPosted at: ${newComment.timestamp}`,
+        });
+        console.log("Email sent for new comment");
+      }
     } catch (err) {
       console.error("Error sending email:", err);
     }
@@ -93,16 +102,12 @@ function registerRoutes(app) {
     const { pageId, commentId } = req.params;
 
     if (!data[pageId] || !data[pageId].comments) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Page or comments not found" });
+      return res.status(404).json({ success: false, message: "Page or comments not found" });
     }
 
     const comment = data[pageId].comments.find((c) => c.id == commentId);
     if (!comment) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Comment not found" });
+      return res.status(404).json({ success: false, message: "Comment not found" });
     }
 
     comment.message = req.body.text || comment.message;
@@ -119,16 +124,12 @@ function registerRoutes(app) {
     const { pageId, commentId } = req.params;
 
     if (!data[pageId] || !data[pageId].comments) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Page or comments not found" });
+      return res.status(404).json({ success: false, message: "Page or comments not found" });
     }
 
     const index = data[pageId].comments.findIndex((c) => c.id == commentId);
     if (index === -1) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Comment not found" });
+      return res.status(404).json({ success: false, message: "Comment not found" });
     }
 
     data[pageId].comments.splice(index, 1);
@@ -174,22 +175,20 @@ function registerRoutes(app) {
   });
 }
 
-// If run directly → start an express server
+// Standalone mode
 if (require.main === module) {
   const app = express();
   const PORT = process.env.PORT || 5000;
 
-  app.use(bodyParser.json());
   registerRoutes(app);
 
   app.get("/", (req, res) => {
     res.send("✅ Comments backend is running!");
   });
 
-  app.listen(PORT, () =>
-    console.log(`🚀 Standalone server running on port ${PORT}`)
-  );
+  app.listen(PORT, () => {
+    console.log(`🚀 Standalone server running on port ${PORT}`);
+  });
 }
 
-// Export function so it works when imported
 module.exports = registerRoutes;
